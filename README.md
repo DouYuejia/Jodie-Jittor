@@ -6,36 +6,7 @@
 #### [Brief video explanation](https://www.youtube.com/watch?v=ItBmU8681j0)
 
 ### Introduction
-Temporal networks are ubiquitous in e-commerce (users clicking, purchasing, saving items), social networks (users talking with one another and interacting with content), finance (transactions between users and merchants), and education (students taking courses). In all domains, the entities (users, items, content) can be represented as nodes and their interaction as edges. 
-
-**JODIE** is a representation learning framework for all nodes in temporal networks. Given a sequence of node actions, JODIE learns a dynamic embedding trajectory for every node (as opposed to a static embedding). These trajectories are useful for downstream machine learning tasks, such as link prediction, node classification, and clustering. JODIE is fast and makes accurate predictions about future interactions and anomaly detection.
-
-In this paper, JODIE has been used for two broad category of tasks:
-1. **Temporal Link Prediction**: Which two nodes will interact next? Example applications are recommender systems and modeling network evolution.
-2. **Temporal Node Classification**: When does the state of an node change from normal to abnormal? Example applications are anomaly detection, ban prediction, dropout and churn prediction, and fraud and account compromise.
-
-### Motivation 
-Temporal networks provide an expressive language to represent time-evolving and dynamic interactions between nodes. Think of users interacting (click, purchase, view) with items. Representation learning provides a powerful tool to model and reason on  networks. However, as networks evolve over time, a single (static) embedding becomes insufficient to represent the changing behavior of the entities and the dynamics of the network.
-
-![JODIE at work](http://snap.stanford.edu/jodie/jodie-example.png)
-
-JODIE is a representation learning framework that embeds every node in a Euclidean space and their evolution is modeled by an embedding trajectory in this space. JODIE learns to forecast the embedding trajectories into the future to make predictions about the entities and their interactions. These trajectories can be trained for downstream tasks, such as recommendations and predictions. JODIE is scalable to large networks by employing a novel data batching algorithm, called t-Batch, that creates batches of independent edges that can be processed simulaneously.
-
-If you make use of this code, the JODIE algorithm, the T-batch algorithm, or the datasets in your work, please cite the following paper:
-```
- @inproceedings{kumar2019predicting,
-	title={Predicting Dynamic Embedding Trajectory in Temporal Interaction Networks},
-	author={Kumar, Srijan and Zhang, Xikun and Leskovec, Jure},
-	booktitle={Proceedings of the 25th ACM SIGKDD international conference on Knowledge discovery and data mining},
-	year={2019},
-	organization={ACM}
- }
-```
-
-### Short Video Explanation of JODIE (External Link to YouTube)
-
-[![JODIE short video](https://cs.stanford.edu/~srijan/img/jodie-thumbnail-youtube.png)](https://www.youtube.com/watch?v=ItBmU8681j0)
-
+This repository contains a [Jittor](https://github.com/Jittor/jittor) implementation of JODIE, adapted from the [original implementation](https://github.com/claws-lab/jodie/tree/master) by CLAWS Lab.
 
 ### Datasets 
 Links to datasets used in the paper:
