@@ -13,7 +13,13 @@ import copy
 from collections import defaultdict
 import os, re
 import argparse
-from sklearn.preprocessing import scale
+# from sklearn.preprocessing import scale
+
+def scale(data):
+    mean = np.mean(data, axis=0)
+    std = np.std(data, axis=0)
+    return (data - mean) / std
+
 
 # LOAD THE NETWORK
 def load_network(args, time_scaling=True):

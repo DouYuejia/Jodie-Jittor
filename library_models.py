@@ -4,30 +4,30 @@ This is a supporting library with the code of the model.
 Paper: Predicting Dynamic Embedding Trajectory in Temporal Interaction Networks. S. Kumar, X. Zhang, J. Leskovec. ACM SIGKDD International Conference on Knowledge Discovery and Data Mining (KDD), 2019. 
 '''
 from __future__ import division
-import torch
-import torch.nn as nn
-from torch.nn import functional as F
-from torch.autograd import Variable
-from torch import optim
+import jittor
+import jittor.nn as nn
+import jittor.nn as F
+# from jittor.autograd import Variable
+from jittor import optim
 import numpy as np
 import math, random
 import sys
 from collections import defaultdict
 import os
-import gpustat
+# import gpustat
 from itertools import chain
-from tqdm import tqdm, trange, tqdm_notebook, tnrange
+from tqdm import tqdm, tqdm_notebook, tnrange
+from tqdm.notebook import trange
 import csv
 import json
 
 PATH = "./"
 
-try:
-    get_ipython
-    trange = tnrange
-    tqdm = tqdm_notebook
-except NameError:
-    pass
+# try:
+#     trange = tnrange
+#     tqdm = tqdm_notebook
+# except NameError:
+#     pass
 
 total_reinitialization_count = 0
 
@@ -54,8 +54,8 @@ class JODIE(nn.Module):
         self.item_static_embedding_size = num_items
 
         print("Initializing user and item embeddings")
-        self.initial_user_embedding = nn.Parameter(torch.Tensor(args.embedding_dim))
-        self.initial_item_embedding = nn.Parameter(torch.Tensor(args.embedding_dim))
+        self.initial_user_embedding = nn.Parameter(jittor.Var(args.embedding_dim))
+        self.initial_item_embedding = nn.Parameter(jittor.Var(args.embedding_dim))
 
         rnn_input_size_items = rnn_input_size_users = self.embedding_dim + 1 + num_features
 
@@ -72,18 +72,18 @@ class JODIE(nn.Module):
         
     def forward(self, user_embeddings, item_embeddings, timediffs=None, features=None, select=None):
         if select == 'item_update':
-            input1 = torch.cat([user_embeddings, timediffs, features], dim=1)
+            input1 = jittor.cat([user_embeddings, timediffs, features], dim=1)
             item_embedding_output = self.item_rnn(input1, item_embeddings)
-            return F.normalize(item_embedding_output)
+            return jittor.normalize(item_embedding_output)
 
         elif select == 'user_update':
-            input2 = torch.cat([item_embeddings, timediffs, features], dim=1)
+            input2 = jittor.cat([item_embeddings, timediffs, features], dim=1)
             user_embedding_output = self.user_rnn(input2, user_embeddings)
-            return F.normalize(user_embedding_output)
+            return jittor.normalize(user_embedding_output)
 
         elif select == 'project':
             user_projected_embedding = self.context_convert(user_embeddings, timediffs, features)
-            #user_projected_embedding = torch.cat([input3, item_embeddings], dim=1)
+            #user_projected_embedding = jittor.cat([input3, item_embeddings], dim=1)
             return user_projected_embedding
 
     def context_convert(self, embeddings, timediffs, features):
@@ -133,7 +133,7 @@ def reinitialize_tbatches():
 def calculate_state_prediction_loss(model, tbatch_interactionids, user_embeddings_time_series, y_true, loss_function):
     # PREDCIT THE LABEL FROM THE USER DYNAMIC EMBEDDINGS
     prob = model.predict_label(user_embeddings_time_series[tbatch_interactionids,:])
-    y = Variable(torch.LongTensor(y_true).cuda()[tbatch_interactionids])
+    y = jittor.Var(jittor.array(y_true, dtype=jittor.int64).cuda()[tbatch_interactionids])
     
     loss = loss_function(prob, y)
 
@@ -161,7 +161,7 @@ def save_model(model, optimizer, args, epoch, user_embeddings, item_embeddings, 
         os.makedirs(directory)
 
     filename = os.path.join(directory, "checkpoint.%s.ep%d.tp%.1f.pth.tar" % (args.model, epoch, args.train_proportion))
-    torch.save(state, filename)
+    jittor.save(state, filename)
     print("*** Saved embeddings and model to file: %s ***\n\n" % filename)
 
 
@@ -169,19 +169,19 @@ def save_model(model, optimizer, args, epoch, user_embeddings, item_embeddings, 
 def load_model(model, optimizer, args, epoch):
     modelname = args.model
     filename = PATH + "saved_models/%s/checkpoint.%s.ep%d.tp%.1f.pth.tar" % (args.network, modelname, epoch, args.train_proportion)
-    checkpoint = torch.load(filename)
+    checkpoint = jittor.load(filename)
     print("Loading saved embeddings and model: %s" % filename)
     args.start_epoch = checkpoint['epoch']
-    user_embeddings = Variable(torch.from_numpy(checkpoint['user_embeddings']).cuda())
-    item_embeddings = Variable(torch.from_numpy(checkpoint['item_embeddings']).cuda())
+    user_embeddings = jittor.Var(jittor.array(checkpoint['user_embeddings']).cuda())
+    item_embeddings = jittor.Var(jittor.array(checkpoint['item_embeddings']).cuda())
     try:
         train_end_idx = checkpoint['train_end_idx'] 
     except KeyError:
         train_end_idx = None
 
     try:
-        user_embeddings_time_series = Variable(torch.from_numpy(checkpoint['user_embeddings_time_series']).cuda())
-        item_embeddings_time_series = Variable(torch.from_numpy(checkpoint['item_embeddings_time_series']).cuda())
+        user_embeddings_time_series = jittor.Var(jittor.array(checkpoint['user_embeddings_time_series']).cuda())
+        item_embeddings_time_series = jittor.Var(jittor.array(checkpoint['item_embeddings_time_series']).cuda())
     except:
         user_embeddings_time_series = None
         item_embeddings_time_series = None
@@ -215,11 +215,11 @@ def set_embeddings_training_end(user_embeddings, item_embeddings, user_embedding
 
 
 # SELECT THE GPU WITH MOST FREE MEMORY TO SCHEDULE JOB 
-def select_free_gpu():
-    mem = []
-    gpus = list(set(range(torch.cuda.device_count()))) # list(set(X)) is done to shuffle the array
-    for i in gpus:
-        gpu_stats = gpustat.GPUStatCollection.new_query()
-        mem.append(gpu_stats.jsonify()["gpus"][i]["memory.used"])
-    return str(gpus[np.argmin(mem)])
+# def select_free_gpu():
+#     mem = []
+#     gpus = list(set(range(jittor.cuda.device_count()))) # list(set(X)) is done to shuffle the array
+#     for i in gpus:
+#         gpu_stats = gpustat.GPUStatCollection.new_query()
+#         mem.append(gpu_stats.jsonify()["gpus"][i]["memory.used"])
+#     return str(gpus[np.argmin(mem)])
 

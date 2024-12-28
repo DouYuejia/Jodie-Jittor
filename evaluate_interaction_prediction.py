@@ -77,7 +77,7 @@ tbatch_timespan = timespan / 500
 
 # INITIALIZE MODEL PARAMETERS
 model = JODIE(args, num_features, num_users, num_items).cuda()
-weight = torch.Tensor([1,true_labels_ratio]).cuda()
+weight = jittor.Tensor([1,true_labels_ratio]).cuda()
 crossEntropyLoss = nn.CrossEntropyLoss(weight=weight)
 MSELoss = nn.MSELoss()
 
@@ -138,27 +138,27 @@ with trange(train_end_idx, test_end_idx) as progress_bar:
         itemid_previous = user_previous_itemid_sequence[j]
 
         # LOAD USER AND ITEM EMBEDDING
-        user_embedding_input = user_embeddings[torch.cuda.LongTensor([userid])]
-        user_embedding_static_input = user_embeddings_static[torch.cuda.LongTensor([userid])]
-        item_embedding_input = item_embeddings[torch.cuda.LongTensor([itemid])]
-        item_embedding_static_input = item_embeddings_static[torch.cuda.LongTensor([itemid])]
-        feature_tensor = Variable(torch.Tensor(feature).cuda()).unsqueeze(0)
-        user_timediffs_tensor = Variable(torch.Tensor([user_timediff]).cuda()).unsqueeze(0)
-        item_timediffs_tensor = Variable(torch.Tensor([item_timediff]).cuda()).unsqueeze(0)
-        item_embedding_previous = item_embeddings[torch.cuda.LongTensor([itemid_previous])]
+        user_embedding_input = user_embeddings[jittor.cuda.LongTensor([userid])]
+        user_embedding_static_input = user_embeddings_static[jittor.cuda.LongTensor([userid])]
+        item_embedding_input = item_embeddings[jittor.cuda.LongTensor([itemid])]
+        item_embedding_static_input = item_embeddings_static[jittor.cuda.LongTensor([itemid])]
+        feature_tensor = Variable(jittor.Tensor(feature).cuda()).unsqueeze(0)
+        user_timediffs_tensor = Variable(jittor.Tensor([user_timediff]).cuda()).unsqueeze(0)
+        item_timediffs_tensor = Variable(jittor.Tensor([item_timediff]).cuda()).unsqueeze(0)
+        item_embedding_previous = item_embeddings[jittor.cuda.LongTensor([itemid_previous])]
 
         # PROJECT USER EMBEDDING
         user_projected_embedding = model.forward(user_embedding_input, item_embedding_previous, timediffs=user_timediffs_tensor, features=feature_tensor, select='project')
-        user_item_embedding = torch.cat([user_projected_embedding, item_embedding_previous, item_embeddings_static[torch.cuda.LongTensor([itemid_previous])], user_embedding_static_input], dim=1)
+        user_item_embedding = jittor.cat([user_projected_embedding, item_embedding_previous, item_embeddings_static[jittor.cuda.LongTensor([itemid_previous])], user_embedding_static_input], dim=1)
 
         # PREDICT ITEM EMBEDDING
         predicted_item_embedding = model.predict_item_embedding(user_item_embedding)
 
         # CALCULATE PREDICTION LOSS
-        loss += MSELoss(predicted_item_embedding, torch.cat([item_embedding_input, item_embedding_static_input], dim=1).detach())
+        loss += MSELoss(predicted_item_embedding, jittor.cat([item_embedding_input, item_embedding_static_input], dim=1).detach())
         
         # CALCULATE DISTANCE OF PREDICTED ITEM EMBEDDING TO ALL ITEMS 
-        euclidean_distances = nn.PairwiseDistance()(predicted_item_embedding.repeat(num_items, 1), torch.cat([item_embeddings, item_embeddings_static], dim=1)).squeeze(-1) 
+        euclidean_distances = nn.PairwiseDistance()(predicted_item_embedding.repeat(num_items, 1), jittor.cat([item_embeddings, item_embeddings_static], dim=1)).squeeze(-1) 
         
         # CALCULATE RANK OF THE TRUE ITEM AMONG ALL ITEMS
         true_item_distance = euclidean_distances[itemid]
